@@ -196,15 +196,31 @@ main(int argc, char *argv[])
 	}
 
 	if (dodest) {
-		char *dest = dirname(argv[argc - 1]);
-		if (dest == NULL)
+		char *destcopy = strdup(argv[argc - 1]);
+		char *dest, *destdir;
+		if (destcopy == NULL)
+			err(1, "strdup");
+		dest = dirname(destcopy);
+		if (dest == NULL) {
+			free(destcopy);
 			errx(1, "cannot determine dirname");
+		}
+		/*
+		 * dirname() may return a pointer to static storage or
+		 * modify destcopy in place. Make a copy of the result
+		 * since install_dir() modifies its argument.
+		 */
+		destdir = strdup(dest);
+		free(destcopy);
+		if (destdir == NULL)
+			err(1, "strdup");
 		/*
 		 * When -D is passed, do not chmod the directory with the mode set for
 		 * the target file. If more restrictive permissions are required then
 		 * '-d -m' ought to be used instead.
 		 */
-		install_dir(dest, 0755);
+		install_dir(destdir, 0755);
+		free(destdir);
 	}
 
 	no_target = stat(to_name = argv[argc - 1], &to_sb);
